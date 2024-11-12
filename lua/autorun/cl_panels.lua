@@ -56,13 +56,10 @@ function ApolloPanels.UpdateHoverStatus(frame)
 	if ApolloPanels.HoveredPanel != frame then
 
 		if ApolloPanels.HoveredPanel != nil then
-			--pcall(ApolloPanels.HoveredPanel:OnCursorExited())
 			ApolloPanels.PreviousHover = ApolloPanels.HoveredPanel
 		end
 
 		ApolloPanels.HoveredPanel = frame
-
-		--ApolloPanels.HoveredPanel:OnCursorEntered()
 	else
 		local oldFunc = vgui.GetHoveredPanel
 		function vgui.GetHoveredPanel()
@@ -88,7 +85,7 @@ function ApolloPanels.GetHoveredPanel(entity, frame, mouseX, mouseY)
 	local frameWidth, frameHeight = frame:GetSize()
 	
 	local insideFrame = false
-	local childFound = nil
+	local childFound = false
 
 	if ApolloPanels.WithinBB(mouseX, mouseY, frameX, frameY, frameWidth, frameHeight) then
 		insideFrame = true
@@ -101,23 +98,18 @@ function ApolloPanels.GetHoveredPanel(entity, frame, mouseX, mouseY)
 
 		if ApolloPanels.WithinBB(mouseX, mouseY, childX, childY, childWidth, childHeight) then
 			if !child:IsMouseInputEnabled() then child:SetMouseInputEnabled(true) end
-			ApolloPanels.UpdateHoverStatus(child)
 			if child:GetName() == "DHTML" or child:GetName() == "HTML" then
 				child:RequestFocus()
 			end
 
-			childFound = child
-			break
+			childFound = true
+			ApolloPanels.UpdateHoverStatus(child)
+			return child
 		end
 	end
 
-	if insideFrame and childFound != nil then
-		ApolloPanels.PreviousHover = ApolloPanels.HoveredPanel
-		ApolloPanels.HoveredPanel = childFound
-		return childFound
-	else
-		ApolloPanels.PreviousHover = ApolloPanels.HoveredPanel
-		ApolloPanels.HoveredPanel = frame
+	if insideFrame and childFound == false then
+		ApolloPanels.UpdateHoverStatus(frame)
 		return frame
 	end
 
@@ -128,6 +120,8 @@ function ApolloPanels.GetHoveredPanel(entity, frame, mouseX, mouseY)
 end
 
 function ApolloPanels.Create3D2D(entity, frame, scale)
+	local cursorEnabled = ApolloPanels.PanelConfigs[entity.Identifier].cursor
+
 	hook.Add("PostDrawOpaqueRenderables", frame, function()
 
 		if entity == nil or !IsValid(entity) then
@@ -168,15 +162,17 @@ function ApolloPanels.Create3D2D(entity, frame, scale)
 			frame.Angle = angle
 			frame.Normal = normal
 			
-			-- Draw it manually
 			frame:SetPaintedManually(false)
 			frame:PaintManual()
 			frame:SetPaintedManually(true)
 
 			if ApolloPanels.GetCursorWithinBounds(entity.Identifier, x, y) then
-				draw.DrawText("X", "DermaLarge", x, y-13, Color(255,255,255,255), TEXT_ALIGN_CENTER)
-				if ApolloPanels.GetHoveredPanel(entity, frame, x, y) != nil then
-					draw.DrawText("O", "DermaLarge", x, y-13, Color(255,255,255,255), TEXT_ALIGN_CENTER)
+				local hover = ApolloPanels.GetHoveredPanel(entity, frame, x, y)
+				if cursorEnabled then
+					draw.DrawText("X", "DermaLarge", x, y-13, Color(255,255,255,255), TEXT_ALIGN_CENTER)
+					if hover != nil then
+						draw.DrawText("O", "DermaLarge", x, y-13, Color(255,255,255,255), TEXT_ALIGN_CENTER)
+					end
 				end
 			end
 
@@ -185,6 +181,7 @@ function ApolloPanels.Create3D2D(entity, frame, scale)
 					ApolloPanels.MoveHTMLCursor(frame, x, y)
 				end
 			end
+			
 		cam.End3D2D()
 	end)
 end

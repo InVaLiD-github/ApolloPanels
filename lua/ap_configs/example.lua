@@ -5,6 +5,7 @@ ApolloPanels.CreatePanel("example", { -- `example` is the identifier for your pa
 	size = {500, 500},
 	model = "models/hunter/plates/plate025x025.mdl", -- The model of the entity the panel is tied to. Will spawn in the top-left corner of the panel.
 	closable = false,
+	cursor = true, -- ApolloPanels shows a cursor of sorts if this is enabled, feel free to disable it if you don't like it!
 
 	frame = {
 		enabled = true, -- Is the frame enabled? (If not, your onCreated function needs to return a panel in the frame's place.)
