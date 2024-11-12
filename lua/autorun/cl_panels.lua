@@ -80,44 +80,68 @@ function ApolloPanels.WithinBB(mouseX, mouseY, targetX, targetY, targetWidth, ta
 	return false
 end
 
-function ApolloPanels.GetHoveredPanel(entity, frame, mouseX, mouseY)
-	local frameX, frameY = frame:GetPos()
-	local frameWidth, frameHeight = frame:GetSize()
-	
-	local insideFrame = false
-	local childFound = false
+function ApolloPanels.IterateAllChildren(panel, mouseX, mouseY)
+	local lastHoveredChild = nil
 
-	if ApolloPanels.WithinBB(mouseX, mouseY, frameX, frameY, frameWidth, frameHeight) then
-		insideFrame = true
-	end
-
-	for _,child in pairs(frame:GetChildren()) do
-		-- See if mouse pos is within it's bounding box
+	for _, child in ipairs(panel:GetChildren()) do
+		-- Get the position and size of the child
 		local childX, childY = child:GetPos()
 		local childWidth, childHeight = child:GetSize()
 
+		-- Check if the mouse is within the bounding box of the child
 		if ApolloPanels.WithinBB(mouseX, mouseY, childX, childY, childWidth, childHeight) then
-			if !child:IsMouseInputEnabled() then child:SetMouseInputEnabled(true) end
+			-- Enable mouse input for the child if it's not already enabled
+			if not child:IsMouseInputEnabled() then child:SetMouseInputEnabled(true) end
+
+			-- Request focus if the child is a DHTML or HTML panel
 			if child:GetName() == "DHTML" or child:GetName() == "HTML" then
 				child:RequestFocus()
 			end
 
-			childFound = true
-			ApolloPanels.UpdateHoverStatus(child)
-			return child
+			-- Set this child as the currently hovered child
+			lastHoveredChild = child
+		end
+
+		-- Recursively check any children of this child
+		local descendantHovered = ApolloPanels.IterateAllChildren(child, mouseX, mouseY)
+		if descendantHovered then
+			lastHoveredChild = descendantHovered
 		end
 	end
 
-	if insideFrame and childFound == false then
+	-- Return the last child or descendant that was hovered, or nil if none were
+	return lastHoveredChild
+end
+
+function ApolloPanels.GetHoveredPanel(entity, frame, mouseX, mouseY)
+	local frameX, frameY = frame:GetPos()
+	local frameWidth, frameHeight = frame:GetSize()
+	
+	local insideFrame = ApolloPanels.WithinBB(mouseX, mouseY, frameX, frameY, frameWidth, frameHeight)
+	local hoveredChild = nil
+
+	if insideFrame then
+		-- Check if any child or descendant panel is hovered
+		hoveredChild = ApolloPanels.IterateAllChildren(frame, mouseX, mouseY)
+		if hoveredChild then
+			ApolloPanels.UpdateHoverStatus(hoveredChild)
+			return hoveredChild
+		end
+	end
+
+	-- If no children are found, and the mouse is inside the frame, hover the frame itself
+	if insideFrame and not hoveredChild then
 		ApolloPanels.UpdateHoverStatus(frame)
 		return frame
 	end
 
-	if ApolloPanels.HoveredPanel != nil then
+	-- If no panel is hovered, clear the current hover status
+	if ApolloPanels.HoveredPanel then
 		ApolloPanels.PreviousHover = ApolloPanels.HoveredPanel
 		ApolloPanels.HoveredPanel = nil
 	end
 end
+
 
 function ApolloPanels.Create3D2D(entity, frame, scale)
 	local cursorEnabled = ApolloPanels.PanelConfigs[entity.Identifier].cursor
@@ -181,7 +205,7 @@ function ApolloPanels.Create3D2D(entity, frame, scale)
 					ApolloPanels.MoveHTMLCursor(frame, x, y)
 				end
 			end
-			
+
 		cam.End3D2D()
 	end)
 end
@@ -219,7 +243,9 @@ hook.Add("SetupMove", "ApolloPanels.SetupMove", function(ply, mv, cmd)
 	if mv:KeyDown(IN_USE) then
 		if CurTime() >= ApolloPanels.LastUse + 0.5 then
 			if ApolloPanels.HoveredPanel:GetName() != "DHTML" and ApolloPanels.HoveredPanel:GetName() != "HTML" then
-				ApolloPanels.HoveredPanel:DoClick()
+				pcall(function()
+			        ApolloPanels.HoveredPanel:DoClick()
+			    end)
 			else
 				ApolloPanels.HTMLClick(ApolloPanels.HoveredPanel, ApolloPanels.X, ApolloPanels.Y)
 			end
