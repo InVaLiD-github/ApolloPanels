@@ -32,7 +32,7 @@ elseif CLIENT then
 		local entity = self
 
 	    local panel = ApolloPanels.GetPanel(identifier)
-		if panel == nil then print("panel nil") return end
+		if panel == nil then return end
 
 
 		local frame = nil

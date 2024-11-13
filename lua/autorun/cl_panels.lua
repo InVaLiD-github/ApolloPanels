@@ -42,6 +42,9 @@ function ApolloPanels.GetCursorWithinBounds(identifier, x, y)
 	return true
 end
 
+function ApolloPanels.VW(num) return (ScrW()/100)*num end
+function ApolloPanels.VH(num) return (ScrH()/100)*num end
+
 function ApolloPanels.GetCursorPos(origin, normal, angle, scale)
     local trace = LocalPlayer():GetEyeTrace()
 
@@ -146,8 +149,7 @@ end
 function ApolloPanels.Create3D2D(entity, frame, scale)
 	local cursorEnabled = ApolloPanels.PanelConfigs[entity.Identifier].cursor
 
-	hook.Add("PostDrawOpaqueRenderables", frame, function()
-
+	hook.Add("PostDrawOpaqueRenderables", "ApolloPanels."..entity:EntIndex(), function()
 		if entity == nil or !IsValid(entity) then
 			frame:Remove()
 			return
@@ -171,42 +173,44 @@ function ApolloPanels.Create3D2D(entity, frame, scale)
 			end
 
 			if !frame:IsVisible() then frame:SetVisible(true) end
-		end
 
-		cam.Start3D2D(entity:GetPos(), entity:GetAngles(), scale)
-			local x, y = ApolloPanels.GetCursorPos(entity:GetPos(), entity:GetAngles():Up(), entity:GetAngles(), scale)
-			
-			ApolloPanels.X = x
-			ApolloPanels.Y = y
+			cam.Start3D2D(entity:GetPos(), entity:GetAngles(), scale)
+				local x, y = ApolloPanels.GetCursorPos(entity:GetPos(), entity:GetAngles():Up(), entity:GetAngles(), scale)
 
-			frame:SetMouseInputEnabled(true)
+				frame:SetMouseInputEnabled(true)
 
-			frame.Origin = origin
-			frame.Scale = scale
-			frame.Angle = angle
-			frame.Normal = normal
-			
-			frame:SetPaintedManually(false)
-			frame:PaintManual()
-			frame:SetPaintedManually(true)
+				frame.Origin = origin
+				frame.Scale = scale
+				frame.Angle = angle
+				frame.Normal = normal
+				
+				frame:SetPaintedManually(false)
+				frame:PaintManual()
+				frame:SetPaintedManually(true)
 
-			if ApolloPanels.GetCursorWithinBounds(entity.Identifier, x, y) then
-				local hover = ApolloPanels.GetHoveredPanel(entity, frame, x, y)
-				if cursorEnabled then
-					draw.DrawText("X", "DermaLarge", x, y-13, Color(255,255,255,255), TEXT_ALIGN_CENTER)
+				if ApolloPanels.GetCursorWithinBounds(entity.Identifier, x, y) then
+					local hover = ApolloPanels.GetHoveredPanel(entity, frame, x, y)
+					if cursorEnabled then
+						draw.DrawText("X", "DermaLarge", x, y-13, Color(255,255,255,255), TEXT_ALIGN_CENTER)
+						if hover != nil then
+							draw.DrawText("O", "DermaLarge", x, y-13, Color(255,255,255,255), TEXT_ALIGN_CENTER)
+						end
+					end
+
 					if hover != nil then
-						draw.DrawText("O", "DermaLarge", x, y-13, Color(255,255,255,255), TEXT_ALIGN_CENTER)
+						ApolloPanels.X = x
+						ApolloPanels.Y = y
 					end
 				end
-			end
 
-			if ApolloPanels.HoveredPanel != nil then
-				if ApolloPanels.HoveredPanel:GetName() == "DHTML" or ApolloPanels.HoveredPanel:GetName() == "HTML" then
+
+				if ApolloPanels.HoveredPanel != nil and IsValid(ApolloPanels.HoveredPanel) and ispanel(ApolloPanels.HoveredPanel) and (ApolloPanels.HoveredPanel:GetName() == "DHTML" or ApolloPanels.HoveredPanel:GetName() == "HTML") then
 					ApolloPanels.MoveHTMLCursor(frame, x, y)
 				end
-			end
 
-		cam.End3D2D()
+			cam.End3D2D()
+		end
+
 	end)
 end
 
@@ -214,25 +218,37 @@ function ApolloPanels.MoveHTMLCursor(frame, x, y)
 	if x == nil or y == nil or frame == nil then return end
 	-- Call JavaScript to set the cursor position within the HTML page and trigger hover events
 	frame:QueueJavascript(string.format([[
-		// Keep track of the last hovered element
+		// Keep track of the last hovered elements
 		if (typeof lastHovered !== 'undefined' && lastHovered !== null) {
-			lastHovered.classList.remove("hover");
+		    lastHovered.forEach(el => el.classList.remove("hover"));
 		}
-		
+
 		var element = document.elementFromPoint(%d, %d);
 		if (element) {
-			element.classList.add("hover");
-			// Update lastHovered to the current element
-			lastHovered = element;
+		    let parents = []; // Store the current element and its parents
+		    let currentElement = element;
+
+		    // Traverse up to each parent element, stopping at the body
+		    while (currentElement && currentElement.tagName !== "BODY") {
+		        currentElement.classList.add("hover");
+		        parents.push(currentElement); // Add to the list of hovered elements
+		        currentElement = currentElement.parentElement;
+		    }
+
+		    // Update lastHovered to all elements with the hover class
+		    lastHovered = parents;
 		} else {
-			// Clear lastHovered if there's no element at the new position
-			lastHovered = null;
+		    // Clear lastHovered if there's no element at the new position
+		    lastHovered = null;
 		}
+
 	]], x, y))
 end
 
 function ApolloPanels.HTMLClick(frame, x, y)
 	if x == nil or y == nil or frame == nil then return end
+
+	frame:RequestFocus()
 	-- Call JavaScript to perform a click event at the calculated HTML position
 	frame:QueueJavascript(string.format("var element = document.elementFromPoint(%d, %d); if (element) { element.click(); }", x, y))
 end
