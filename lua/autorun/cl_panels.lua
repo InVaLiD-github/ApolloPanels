@@ -21,11 +21,6 @@ ApolloPanels = ApolloPanels or {}
 -- The options are either do this, or force people to add `if SERVER then ...` statements in the config, and I'm not about to do that lol
 function ApolloPanels.PlacePanel() end
 
-local oldFunc = vgui.GetHoveredPanel
-function vgui.GetHoveredPanel()
-	return ApolloPanels.HoveredPanel
-end
-
 function ApolloPanels.GetCursorWithinBounds(identifier, x, y)
 	if x == nil or y == nil then return false end
 	local sizeX = ApolloPanels.PanelConfigs[identifier]['size'][1]
