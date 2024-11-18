@@ -19,7 +19,6 @@ ApolloPanels = ApolloPanels or {}
 -- The config files have these functions so the server can register the panel, however we don't need them.
 -- The options are either do this, or force people to add `if SERVER then ...` statements in the config, and I'm not about to do that lol
 function ApolloPanels.PlacePanel() end
-function ApolloPanels.SpawnPanel() end
 
 local oldFunc = vgui.GetHoveredPanel
 function vgui.GetHoveredPanel()
@@ -158,7 +157,7 @@ function ApolloPanels.Create3D2D(entity, frame, scale)
 		if frame == nil or !ispanel(frame) then return end
 		if entity.Identifier == nil then return end
 		
-		if LocalPlayer():GetPos():Distance(entity:GetPos()) > ApolloPanels.PanelConfigs[entity.Identifier]['range'] then 
+		if ApolloPanels.PanelConfigs[entity.Identifier]['range'] != 0 and LocalPlayer():GetPos():Distance(entity:GetPos()) > ApolloPanels.PanelConfigs[entity.Identifier]['range'] then 
 			if frame:IsVisible() then 
 				if ApolloPanels.PanelConfigs[entity.Identifier]['onHide'] != nil then
 					ApolloPanels.PanelConfigs[entity.Identifier]['onHide'](frame, entity)
@@ -204,7 +203,7 @@ function ApolloPanels.Create3D2D(entity, frame, scale)
 				end
 
 
-				if ApolloPanels.HoveredPanel != nil and IsValid(ApolloPanels.HoveredPanel) and ispanel(ApolloPanels.HoveredPanel) and (ApolloPanels.HoveredPanel:GetName() == "DHTML" or ApolloPanels.HoveredPanel:GetName() == "HTML") then
+				if ApolloPanels.HoveredPanel != nil and IsValid(ApolloPanels.HoveredPanel) and ispanel(ApolloPanels.HoveredPanel) then
 					ApolloPanels.MoveHTMLCursor(frame, x, y)
 				end
 
@@ -216,6 +215,8 @@ end
 
 function ApolloPanels.MoveHTMLCursor(frame, x, y)
 	if x == nil or y == nil or frame == nil then return end
+	if frame:GetName() != "DHTML" and frame:GetName() != "HTML" then return end
+
 	-- Call JavaScript to set the cursor position within the HTML page and trigger hover events
 	frame:QueueJavascript(string.format([[
 		// Keep track of the last hovered elements
@@ -253,10 +254,11 @@ function ApolloPanels.HTMLClick(frame, x, y)
 	frame:QueueJavascript(string.format("var element = document.elementFromPoint(%d, %d); if (element) { element.click(); }", x, y))
 end
 
-hook.Add("SetupMove", "ApolloPanels.SetupMove", function(ply, mv, cmd)
+local useKey = input.GetKeyCode(input.LookupBinding("+use"))
+hook.Add("Think", "ApolloPanels.Think", function()
 	if ApolloPanels.HoveredPanel == nil then return end
 
-	if mv:KeyDown(IN_USE) then
+	if input.IsKeyDown(useKey) then
 		if CurTime() >= ApolloPanels.LastUse + 0.5 then
 			if ApolloPanels.HoveredPanel:GetName() != "DHTML" and ApolloPanels.HoveredPanel:GetName() != "HTML" then
 				pcall(function()
@@ -279,15 +281,18 @@ function ApolloPanels.GetPanel(identifier)
 	return ApolloPanels.PanelConfigs[identifier]
 end
 
-net.Receive("apollopanels_place", function()
-	local panel = net.ReadTable()
-	ApolloPanels.SpawnPanel(panel.identifier, panel.entity)
-end)
-
 net.Receive("apollopanels_send", function()
 	ApolloPanels.PanelConfigsText = net.ReadTable()
 
 	for _,lua in pairs(ApolloPanels.PanelConfigsText) do
 		RunString(lua)
 	end
+end)
+
+gameevent.Listen( "player_activate" )
+hook.Add( "player_activate", "ApolloPanels.PlayerActivated", function( data )
+	timer.Simple(1, function()
+		net.Start("apollopanels_spawned")
+		net.SendToServer()
+	end)
 end)

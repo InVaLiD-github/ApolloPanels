@@ -5,6 +5,7 @@ util.AddNetworkString("apollopanels_init")
 util.AddNetworkString("apollopanels_close")
 util.AddNetworkString("apollopanels_file")
 util.AddNetworkString("apollopanels_send")
+util.AddNetworkString("apollopanels_spawned")
 
 ApolloPanels = {}
 ApolloPanels.PanelConfigs = {}
@@ -27,8 +28,6 @@ function ApolloPanels.FindPanels()
 	    include("ap_configs/"..filename)
 	    ApolloPanels.PanelConfigsText[filename] = file.Read("ap_configs/"..filename, "LUA")
 	end
-
-	hook.Run("ApolloPanels.Finished")
 end
 
 function ApolloPanels.CreatePanel(identifier, tbl)
@@ -66,39 +65,17 @@ function ApolloPanels.PlacePanel(identifier, position, angle)
 	}
 
 	table.insert(ApolloPanels.PlacedPanels, tbl)
-
-	timer.Create("apolloPanels.Wait."..CurTime().."."..identifier, 1, 1, function()
-		net.Start("apollopanels_place")
-			net.WriteTable(tbl)
-		net.Broadcast()
-	end)
 end
 
-if game.SinglePlayer() then
-	hook.Add("ApolloPanels.Finished", "ApolloPanels.Finished", function()
-		net.Start("apollopanels_send")
-			net.WriteTable(ApolloPanels.PanelConfigsText)
-		net.Send(Entity(1))
-	end)
-else
-	local load_queue = {}
+net.Receive("apollopanels_spawned", function(len, ply)
+	net.Start("apollopanels_send")
+		net.WriteTable(ApolloPanels.PanelConfigsText)
+	net.Send(ply)
+end)
 
-	hook.Add( "PlayerInitialSpawn", "ApolloPanels.PlayerInitialSpawn", function( ply )
-		load_queue[ ply ] = true
-	end )
-
-	hook.Add( "StartCommand", "ApolloPanels.StartCommand", function( ply, cmd )
-		if load_queue[ ply ] and not cmd:IsForced() then
-			load_queue[ ply ] = nil
-
-			net.Start("apollopanels_send")
-				net.WriteTable(ApolloPanels.PanelConfigsText)
-			net.Send(ply)
-		end
-	end)
-end
-
-ApolloPanels.FindPanels()
+hook.Add("InitPostEntity", "ApolloPanels.InitPostEntity", function()
+	ApolloPanels.FindPanels()
+end)
 
 hook.Add("PostCleanupMap", "ApolloPanels.PostCleanupMap", function()
 	ApolloPanels.FindPanels()

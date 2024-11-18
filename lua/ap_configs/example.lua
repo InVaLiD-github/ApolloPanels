@@ -4,7 +4,7 @@ ApolloPanels.CreatePanel("example", { -- `example` is the identifier for your pa
 	scale = 0.01, -- If you want more resolution, crank up the size parameter and lower the scale!
 	size = {500, 500},
 	model = "models/hunter/plates/plate025x025.mdl", -- The model of the entity the panel is tied to. Will spawn in the top-left corner of the panel.
-	closable = false,
+	closable = false, -- If you don't want the panel to be able to be closed. If it is closable, you'll have to make a way to recreate the panel yourself.
 	cursor = true, -- ApolloPanels shows a cursor of sorts if this is enabled, feel free to disable it if you don't like it!
 
 	frame = {
