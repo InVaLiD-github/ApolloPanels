@@ -5,6 +5,7 @@ ApolloPanels.PanelConfigs = {}
 ApolloPanels.PlacedPanels = {}
 ApolloPanels.PanelConfigsText = {}
 ApolloPanels.HoveredPanel = nil
+ApolloPanels.HoveredPanelFrame = nil
 ApolloPanels.PreviousHover = nil
 ApolloPanels.X = nil
 ApolloPanels.Y = nil
@@ -62,12 +63,6 @@ function ApolloPanels.UpdateHoverStatus(frame)
 		end
 
 		ApolloPanels.HoveredPanel = frame
-	else
-		local oldFunc = vgui.GetHoveredPanel
-		function vgui.GetHoveredPanel()
-			return ApolloPanels.HoveredPanel
-		end
-		vgui.GetHoveredPanel = oldFunc
 	end	
 end
 
@@ -127,6 +122,7 @@ function ApolloPanels.GetHoveredPanel(entity, frame, mouseX, mouseY)
 		hoveredChild = ApolloPanels.IterateAllChildren(frame, mouseX, mouseY)
 		if hoveredChild then
 			ApolloPanels.UpdateHoverStatus(hoveredChild)
+			ApolloPanels.HoveredPanelFrame = frame
 			return hoveredChild
 		end
 	end
@@ -134,6 +130,7 @@ function ApolloPanels.GetHoveredPanel(entity, frame, mouseX, mouseY)
 	-- If no children are found, and the mouse is inside the frame, hover the frame itself
 	if insideFrame and not hoveredChild then
 		ApolloPanels.UpdateHoverStatus(frame)
+		ApolloPanels.HoveredPanelFrame = frame
 		return frame
 	end
 
@@ -141,6 +138,7 @@ function ApolloPanels.GetHoveredPanel(entity, frame, mouseX, mouseY)
 	if ApolloPanels.HoveredPanel then
 		ApolloPanels.PreviousHover = ApolloPanels.HoveredPanel
 		ApolloPanels.HoveredPanel = nil
+		ApolloPanels.HoveredPanelFrame = nil
 	end
 end
 
@@ -199,6 +197,12 @@ function ApolloPanels.Create3D2D(entity, frame, scale)
 					if hover != nil then
 						ApolloPanels.X = x
 						ApolloPanels.Y = y
+					end
+				else
+					if ApolloPanels.HoveredPanelFrame == frame then
+						ApolloPanels.PreviousHover = ApolloPanels.HoveredPanel
+						ApolloPanels.HoveredPanel = nil
+						ApolloPanels.HoveredPanelFrame = nil
 					end
 				end
 
