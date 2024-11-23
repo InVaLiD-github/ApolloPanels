@@ -1,7 +1,10 @@
 if !CLIENT then return end
 
-ApolloPanels = {}
-ApolloPanels.PanelConfigs = {}
+if ApolloPanels == nil then
+	ApolloPanels = {}
+	ApolloPanels.PanelConfigs = {}
+end
+
 ApolloPanels.PlacedPanels = {}
 ApolloPanels.PanelConfigsText = {}
 ApolloPanels.HoveredPanel = nil
@@ -285,6 +288,15 @@ net.Receive("apollopanels_send", function()
 
 	for _,lua in pairs(ApolloPanels.PanelConfigsText) do
 		RunString(lua)
+	end
+
+	for _,panel in pairs(ApolloPanels.PlacedPanels) do
+		if panel == nil or !IsValid(panel) then return end
+
+		local identifier = panel:GetNWString("apollopanel_type", nil)
+		if identifier == nil then return end
+
+		panel:SetPanelType(identifier) 
 	end
 end)
 

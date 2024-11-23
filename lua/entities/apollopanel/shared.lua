@@ -63,7 +63,15 @@ elseif CLIENT then
 	end
 
 	function ENT:Initialize()
+		if ApolloPanels == nil then
+			ApolloPanels = {}
+			ApolloPanels.PlacedPanels = {}
+		end
+
 		self.Created = false
+		if !table.HasValue(ApolloPanels.PlacedPanels, self) then
+			table.insert(ApolloPanels.PlacedPanels, self)
+		end
 
 		timer.Create("ApolloPanel_Init_"..self:EntIndex(), 1, 0, function()
 			if self.Created == true then timer.Remove("ApolloPanel_Init_"..self:EntIndex()) end
