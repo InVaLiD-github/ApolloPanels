@@ -179,9 +179,8 @@ function ApolloPanels.Create3D2D(entity, frame, scale)
 				frame.Angle = angle
 				frame.Normal = normal
 				
-				frame:SetPaintedManually(false)
-				frame:PaintManual()
 				frame:SetPaintedManually(true)
+				frame:PaintManual()
 
 				if ApolloPanels.GetCursorWithinBounds(entity.Identifier, x, y) then
 					local hover = ApolloPanels.GetHoveredPanel(entity, frame, x, y)

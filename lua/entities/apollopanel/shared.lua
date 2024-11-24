@@ -59,6 +59,8 @@ elseif CLIENT then
 			self:Remove()
 		end
 
+		frame:SetVisible(false)
+
 		ApolloPanels.Create3D2D(entity, frame, panel.scale)
 	end
 
