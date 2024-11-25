@@ -108,10 +108,30 @@ function ApolloPanels.IterateAllChildren(panel, mouseX, mouseY)
 	return lastHoveredChild
 end
 
+function ApolloPanels.IsPanelVisible(entity, panelWidth, panelHeight)
+	local origin = entity:GetPos()
+	local normal = entity:GetAngles():Up()
+	local trace = LocalPlayer():GetEyeTrace()
+
+    local intersection = util.IntersectRayWithPlane(trace.StartPos, LocalPlayer():GetAimVector(), origin, normal)
+    if intersection == nil then return false end
+
+    local hitPos = trace.HitPos
+    local plyPos = LocalPlayer():GetPos()
+
+    if hitPos:Distance(plyPos) > intersection:Distance(plyPos) then
+    	return true
+    else
+    	return false
+    end
+end
+
 function ApolloPanels.GetHoveredPanel(entity, frame, mouseX, mouseY)
 	local frameX, frameY = frame:GetPos()
 	local frameWidth, frameHeight = frame:GetSize()
 	
+	if !ApolloPanels.IsPanelVisible(entity, frameWidth, frameHeight) then return end
+
 	local insideFrame = ApolloPanels.WithinBB(mouseX, mouseY, frameX, frameY, frameWidth, frameHeight)
 	local hoveredChild = nil
 
